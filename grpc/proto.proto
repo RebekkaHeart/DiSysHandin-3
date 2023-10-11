@@ -1,0 +1,7 @@
+proto
+syntax = "proto3";
+
+package main;
+
+option go_package = "grpc/proto";
+
