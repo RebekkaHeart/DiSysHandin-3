@@ -1,7 +1,22 @@
 proto
 syntax = "proto3";
 
-package main;
+package simpleGuide;
 
 option go_package = "grpc/proto";
 
+message PublishMessage {
+  int64 clientId = 1;
+}
+
+service TimeAsk {
+  rpc AskForTime(AskForTimeMessage) returns (TimeMessage);
+}
+
+service ClientJoin{
+
+}
+
+service ClientDrop{
+    
+}
