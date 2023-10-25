@@ -1,10 +1,12 @@
-package ChittyChat
+package main
 
 import (
-	proto "DiSysHandin-3/grpc"
 	"log"
+	"net"
+	"strconv"
 
 	"google.golang.org/grpc"
+	proto "Handin3/grpc"
 )
 
 type Server struct {
