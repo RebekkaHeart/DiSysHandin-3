@@ -7,7 +7,7 @@ option go_package = "grpc/proto";
 service ChittyChat{
     rpc PublishMessage(PublishRequest) returns (PublishResponse);
 
-    rpc Broadcast(stream BroadcastMessage) returns (BroadCastResponse);
+    rpc Broadcast(stream BroadcastMessage) returns (stream BroadcastMessage);
 
     rpc Join(JoinRequest) returns (JoinResponse);
 
@@ -25,10 +25,7 @@ message PublishResponse{
 message BroadcastMessage{
     string message = 1;
     int64 lamportTimestamp = 2;
-}
-
-message BroadCastResponse{
-    string status = 1;
+    string ClientName = 3;
 }
 
 message JoinRequest{

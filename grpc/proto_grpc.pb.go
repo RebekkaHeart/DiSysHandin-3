@@ -52,7 +52,7 @@ func (c *chittyChatClient) Broadcast(ctx context.Context, opts ...grpc.CallOptio
 
 type ChittyChat_BroadcastClient interface {
 	Send(*BroadcastMessage) error
-	CloseAndRecv() (*BroadCastResponse, error)
+	Recv() (*BroadcastMessage, error)
 	grpc.ClientStream
 }
 
@@ -64,11 +64,8 @@ func (x *chittyChatBroadcastClient) Send(m *BroadcastMessage) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *chittyChatBroadcastClient) CloseAndRecv() (*BroadCastResponse, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(BroadCastResponse)
+func (x *chittyChatBroadcastClient) Recv() (*BroadcastMessage, error) {
+	m := new(BroadcastMessage)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -156,7 +153,7 @@ func _ChittyChat_Broadcast_Handler(srv interface{}, stream grpc.ServerStream) er
 }
 
 type ChittyChat_BroadcastServer interface {
-	SendAndClose(*BroadCastResponse) error
+	Send(*BroadcastMessage) error
 	Recv() (*BroadcastMessage, error)
 	grpc.ServerStream
 }
@@ -165,7 +162,7 @@ type chittyChatBroadcastServer struct {
 	grpc.ServerStream
 }
 
-func (x *chittyChatBroadcastServer) SendAndClose(m *BroadCastResponse) error {
+func (x *chittyChatBroadcastServer) Send(m *BroadcastMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
@@ -237,6 +234,7 @@ var ChittyChat_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Broadcast",
 			Handler:       _ChittyChat_Broadcast_Handler,
+			ServerStreams: true,
 			ClientStreams: true,
 		},
 	},
