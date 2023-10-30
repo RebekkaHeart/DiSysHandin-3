@@ -37,6 +37,7 @@ func (s *Server) PublishMessage(ctx context.Context, req *proto.PublishRequest) 
 	s.lamport++
 
 	if len(req.Message) > 128 {
+		log.Printf("Message is too long")
 		return &proto.PublishResponse{Status: "Message is too long"}, nil
 	} else {
 		for _, stream := range s.clients {
@@ -49,6 +50,7 @@ func (s *Server) PublishMessage(ctx context.Context, req *proto.PublishRequest) 
 			}
 
 		}
+		log.Printf("A client says: %s", req.Message)
 
 	}
 
@@ -56,7 +58,7 @@ func (s *Server) PublishMessage(ctx context.Context, req *proto.PublishRequest) 
 }
 
 func (s *Server) Broadcast(stream proto.ChittyChat_BroadcastServer) error {
-	clientName := "" // Placeholder for client's name
+	clientName := ""
 
 	for {
 		req, err := stream.Recv()
@@ -83,6 +85,7 @@ func (s *Server) Join(ctx context.Context, req *proto.JoinRequest) (*proto.JoinR
 			LamportTimestamp: s.lamport,
 		})
 	}
+	log.Printf(message)
 
 	return &proto.JoinResponse{WelcomeMessage: message, LamportTimestamp: s.lamport}, nil
 }

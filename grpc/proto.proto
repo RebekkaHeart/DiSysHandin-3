@@ -16,6 +16,7 @@ service ChittyChat{
 
 message PublishRequest {
   string message = 1;
+  string ClientName = 2;
 }
 
 message PublishResponse{
