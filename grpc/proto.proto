@@ -23,7 +23,7 @@ message PublishResponse{
 }
 
 message BroadcastMessage{
-    string message = 1;
+    string message = 1 [(validate.rules).string.max_len = 128];
     int64 lamportTimestamp = 2;
     string ClientName = 3;
 }

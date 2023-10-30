@@ -11,6 +11,7 @@ import (
 	proto "Handin3/grpc"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func broadcastListener(stream proto.ChittyChat_BroadcastClient) {
@@ -24,7 +25,7 @@ func broadcastListener(stream proto.ChittyChat_BroadcastClient) {
 }
 
 func main() {
-	conn, err := grpc.Dial(":8080", grpc.WithInsecure())
+	conn, err := grpc.Dial(":8080", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect: %v", err)
 	}

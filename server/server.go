@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"sync"
 
-	"google.golang.org/grpc"
 	proto "Handin3/grpc"
+
+	"google.golang.org/grpc"
 )
 
 type Server struct {
@@ -16,9 +17,9 @@ type Server struct {
 
 	name       string
 	port       int
-	lamport    int64 
+	lamport    int64
 	clients    map[string]proto.ChittyChat_BroadcastServer
-	clientLock sync.RWMutex 
+	clientLock sync.RWMutex
 }
 
 func NewServer(name string, port int) *Server {
@@ -33,16 +34,22 @@ func (s *Server) PublishMessage(ctx context.Context, req *proto.PublishRequest) 
 	s.clientLock.RLock()
 	defer s.clientLock.RUnlock()
 
-	s.lamport++ 
+	s.lamport++
 
-	for _, stream := range s.clients {
-		err := stream.Send(&proto.BroadcastMessage{
-			Message:         req.Message,
-			LamportTimestamp: s.lamport,
-		})
-		if err != nil{
-			log.Printf("Failed to send message to client: %v", err)
+	if len(req.Message) > 128 {
+		return &proto.PublishResponse{Status: "Message is too long"}, nil
+	} else {
+		for _, stream := range s.clients {
+			err := stream.Send(&proto.BroadcastMessage{
+				Message:          req.Message,
+				LamportTimestamp: s.lamport,
+			})
+			if err != nil {
+				log.Printf("Failed to send message to client: %v", err)
+			}
+
 		}
+
 	}
 
 	return &proto.PublishResponse{Status: "Message Published"}, nil
@@ -65,14 +72,14 @@ func (s *Server) Broadcast(stream proto.ChittyChat_BroadcastServer) error {
 }
 
 func (s *Server) Join(ctx context.Context, req *proto.JoinRequest) (*proto.JoinResponse, error) {
-	s.lamport++ 
+	s.lamport++
 	message := "Participant " + req.ClientName + " joined Chitty-Chat at Lamport time " + strconv.FormatInt(s.lamport, 10)
 
 	s.clientLock.RLock()
 	defer s.clientLock.RUnlock()
 	for _, stream := range s.clients {
 		stream.Send(&proto.BroadcastMessage{
-			Message:         message,
+			Message:          message,
 			LamportTimestamp: s.lamport,
 		})
 	}
@@ -81,7 +88,7 @@ func (s *Server) Join(ctx context.Context, req *proto.JoinRequest) (*proto.JoinR
 }
 
 func (s *Server) Leave(ctx context.Context, req *proto.LeaveRequest) (*proto.LeaveResponse, error) {
-	s.lamport++ 
+	s.lamport++
 	message := "Participant " + req.ClientName + " left Chitty-Chat at Lamport time " + strconv.FormatInt(s.lamport, 10)
 
 	s.clientLock.Lock()
@@ -91,7 +98,7 @@ func (s *Server) Leave(ctx context.Context, req *proto.LeaveRequest) (*proto.Lea
 	s.clientLock.RLock()
 	for _, stream := range s.clients {
 		stream.Send(&proto.BroadcastMessage{
-			Message:         message,
+			Message:          message,
 			LamportTimestamp: s.lamport,
 		})
 	}
