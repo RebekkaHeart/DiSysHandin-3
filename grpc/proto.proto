@@ -14,6 +14,11 @@ service ChittyChat{
     rpc Leave(LeaveRequest) returns (LeaveResponse);
 }
 
+message PublishRequest {
+    string message = 1;
+    string clientName = 2;
+}
+
 message BidRequest {
   int64 amount = 1;
   string bidder_id = 2;
