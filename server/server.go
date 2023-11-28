@@ -50,28 +50,28 @@ func (s *Server) PublishMessage(ctx context.Context, request *proto.BidRequest, 
 	s.lamport++
 
 	//spilt to handle auctionid request too
-	if _, err := strconv.Atoi(request.amount); err == nil {
+	if _, err := strconv.Atoi(request.Message); err == nil {
 		log.Printf("That doesnt look like a bid to me, are you sure you put the auction-id, a space and then your bid and nothing else?")
 		return &proto.PublishResponse{Status: "Bid exception"}, nil
 	}
 		// Check if the bidder is registered
-	if _, exists := n.bidders[request.bidderID]; !exists {
-		n.bidders[request.bidderID] = struct {
+	if _, exists := n.bidders[request.BidderId]; !exists {
+		n.bidders[request.BidderId] = struct {
 			amount  int64
 			lamTime int64
 		}{0, 0}
 	}
 
 	// Check if the bid is higher than the previous one
-	if request.amount <= n.highestBid {
+	if request.Amount <= n.highestBid {
 		return &proto.PublishResponse{Status: "Bid failed"}, nil
 	}
 
 	// Update the bid
-	n.bidders[request.bidderID] = struct {
+	n.bidders[request.BidderId] = struct {
 		amount  int64
 		lamTime int64
-	}{request.amount, request.lamTime}
+	}{request.Amount, request.LamTime}
 
 
 	return &proto.PublishResponse{Status: "Bid successful"}, nil
