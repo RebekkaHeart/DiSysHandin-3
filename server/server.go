@@ -22,6 +22,19 @@ type Server struct {
 	clientLock sync.RWMutex
 }
 
+type AuctionNode struct {
+	id            int64
+	highestBid    int64
+	highestBidder string
+	bidders       map[string]struct {
+		amount  int64
+		lamTime int64
+	}
+	mu      sync.Mutex
+	result  string
+	lamTime int64
+}
+
 func NewServer(name string, port int) *Server {
 	return &Server{
 		name:    name,
@@ -30,31 +43,38 @@ func NewServer(name string, port int) *Server {
 	}
 }
 
-func (s *Server) PublishMessage(ctx context.Context, req *proto.PublishRequest) (*proto.PublishResponse, error) {
+func (s *Server) PublishMessage(ctx context.Context, request *proto.BidRequest, n *AuctionNode) (*proto.PublishResponse, error) {
 	s.clientLock.RLock()
 	defer s.clientLock.RUnlock()
 
 	s.lamport++
 
-	if len(req.Message) > 128 {
-		log.Printf("Message is too long")
-		return &proto.PublishResponse{Status: "Message is too long"}, nil
-	} else {
-		for _, stream := range s.clients {
-			err := stream.Send(&proto.BroadcastMessage{
-				Message:          req.Message,
-				LamportTimestamp: s.lamport,
-			})
-			if err != nil {
-				log.Printf("Failed to send message to client: %v", err)
-			}
-
-		}
-		log.Printf("A client says: %s", req.Message)
-
+	//spilt to handle auctionid request too
+	if _, err := strconv.Atoi(request.amount); err == nil {
+		log.Printf("That doesnt look like a bid to me, are you sure you put the auction-id, a space and then your bid and nothing else?")
+		return &proto.PublishResponse{Status: "Bid exception"}, nil
+	}
+		// Check if the bidder is registered
+	if _, exists := n.bidders[request.bidderID]; !exists {
+		n.bidders[request.bidderID] = struct {
+			amount  int64
+			lamTime int64
+		}{0, 0}
 	}
 
-	return &proto.PublishResponse{Status: "Message Published"}, nil
+	// Check if the bid is higher than the previous one
+	if request.amount <= n.highestBid {
+		return &proto.PublishResponse{Status: "Bid failed"}, nil
+	}
+
+	// Update the bid
+	n.bidders[request.bidderID] = struct {
+		amount  int64
+		lamTime int64
+	}{request.amount, request.lamTime}
+
+
+	return &proto.PublishResponse{Status: "Bid successful"}, nil
 }
 
 func (s *Server) Broadcast(stream proto.ChittyChat_BroadcastServer) error {
