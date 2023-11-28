@@ -55,7 +55,7 @@ func main() {
 	fmt.Println(joinResp.WelcomeMessage)
 
 	for {
-		fmt.Println("Here's the ids for the current Auctions: ")
+		//fmt.Println("Here's the ids for the current Auctions: ")
 		fmt.Print("Enter the id of the auction you want to bid on and your bid separated by a space (or type 'exit' to leave): ")
 		message, _ := scanner.ReadString('\n')
 		message = strings.TrimSpace(message)

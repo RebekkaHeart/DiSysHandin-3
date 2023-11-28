@@ -25,13 +25,12 @@ type Server struct {
 type AuctionNode struct {
 	id            int64
 	highestBid    int64
-	highestBidder string
 	bidders       map[string]struct {
 		amount  int64
 		lamTime int64
 	}
 	mu      sync.Mutex
-	result  string
+	IsOver bool
 	lamTime int64
 }
 
@@ -43,7 +42,7 @@ func NewServer(name string, port int) *Server {
 	}
 }
 
-func (s *Server) PublishMessage(ctx context.Context, request *proto.BidRequest, n *AuctionNode) (*proto.PublishResponse, error) {
+func (s *Server) PublishMessage(ctx context.Context, request *proto.PublishRequest, n *AuctionNode) (*proto.PublishResponse, error) {
 	s.clientLock.RLock()
 	defer s.clientLock.RUnlock()
 
@@ -55,29 +54,36 @@ func (s *Server) PublishMessage(ctx context.Context, request *proto.BidRequest, 
 		return &proto.PublishResponse{Status: "Bid exception"}, nil
 	}
 		// Check if the bidder is registered
-	if _, exists := n.bidders[request.BidderId]; !exists {
-		n.bidders[request.BidderId] = struct {
+	if _, exists := n.bidders[request.ClientName]; !exists {
+		n.bidders[request.ClientName] = struct {
 			amount  int64
 			lamTime int64
 		}{0, 0}
 	}
 
-	// Check if the bid is higher than the previous one
-	if request.Amount <= n.highestBid {
-		return &proto.PublishResponse{Status: "Bid failed"}, nil
+	// Check if the bid is higher than the previous one but first make it an int (from string)
+	number,err := strconv.ParseUint(request.Message, 10, 32);
+	if(err != nil){
+		log.Printf("Doesnt look like a number?")
+		return &proto.PublishResponse{Status: "Bid exception"}, nil
+	}
+	mesAsNum := int64(number)
+		if(mesAsNum <= n.highestBid) { 
+			return &proto.PublishResponse{Status: "Bid failed"}, nil
 	}
 
+
 	// Update the bid
-	n.bidders[request.BidderId] = struct {
+	n.bidders[request.ClientName] = struct {
 		amount  int64
 		lamTime int64
-	}{request.Amount, request.LamTime}
+	}{mesAsNum, 1}
 
 
 	return &proto.PublishResponse{Status: "Bid successful"}, nil
 }
 
-func (s *Server) Broadcast(stream proto.ChittyChat_BroadcastServer) error {
+/*func (s *Server) Broadcast(stream proto.ChittyChat_BroadcastServer) error {
 	clientName := ""
 
 	for {
@@ -91,9 +97,9 @@ func (s *Server) Broadcast(stream proto.ChittyChat_BroadcastServer) error {
 		clientName = req.ClientName
 		s.clients[clientName] = stream
 	}
-}
+}*/
 
-func (s *Server) Join(ctx context.Context, req *proto.JoinRequest) (*proto.JoinResponse, error) {
+/*func (s *Server) Join(ctx context.Context, req *proto.JoinRequest) (*proto.JoinResponse, error) {
 	s.lamport++
 	message := "Participant " + req.ClientName + " joined Chitty-Chat at Lamport time " + strconv.FormatInt(s.lamport, 10)
 
@@ -108,9 +114,9 @@ func (s *Server) Join(ctx context.Context, req *proto.JoinRequest) (*proto.JoinR
 	log.Printf(message)
 
 	return &proto.JoinResponse{WelcomeMessage: message, LamportTimestamp: s.lamport}, nil
-}
+}*/
 
-func (s *Server) Leave(ctx context.Context, req *proto.LeaveRequest) (*proto.LeaveResponse, error) {
+/*func (s *Server) Leave(ctx context.Context, req *proto.LeaveRequest) (*proto.LeaveResponse, error) {
 	s.lamport++
 	message := "Participant " + req.ClientName + " left Chitty-Chat at Lamport time " + strconv.FormatInt(s.lamport, 10)
 
@@ -128,7 +134,7 @@ func (s *Server) Leave(ctx context.Context, req *proto.LeaveRequest) (*proto.Lea
 	s.clientLock.RUnlock()
 
 	return &proto.LeaveResponse{GoodbyeMessage: message, LamportTimestamp: s.lamport}, nil
-}
+}*/
 
 func startServer(server *Server) {
 	grpcServer := grpc.NewServer()
